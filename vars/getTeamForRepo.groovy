@@ -31,6 +31,7 @@ def call(repo, bearer) {
         get.setRequestProperty('Authorization', 'Bearer ' + bearer)
         get.setRequestProperty('X-GitHub-Api-Version', '2022-11-28') 
         getRC = get.getResponseCode()
+        println "Echoing something"
 
         if (getRC == (200)) {
             // def response = get.getInputStream().getText()
