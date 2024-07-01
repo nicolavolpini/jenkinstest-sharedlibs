@@ -18,11 +18,6 @@ import groovy.transform.Field
 //     repo: 'plugsurfing/cdm-api',
 // ]
 
-@Field currentBuild = [
-    startTimeInMillis: 1715161920000,
-    duration: 688200000
-]
-
 // END vars for local testing
 /**
 * Obtain the correct webhook based on the team name in DevLake
@@ -43,6 +38,7 @@ def call(repo, bearer) {
             json = new JsonSlurper().parseText(response)
 
             for (team in json) {
+                println "Team name:"
                 println team.name
             }
             // return match.postPipelineDeployTaskEndpoint
