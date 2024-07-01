@@ -42,7 +42,10 @@ def call(repo, bearer) {
             // json = new JsonSlurper().parseText(response)
 
             println "lol1"
-            json = sh(script:'cat ${response} | jq .', returnStdout:true).trim()
+            def jq = """
+                cat ${response} | jq .
+            """
+            json = sh(jq)
             println "lol"
             println json
             
