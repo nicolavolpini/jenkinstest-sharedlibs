@@ -38,6 +38,7 @@ def call(repo, bearer) {
             response = get.inputStream.getText()
             // json = new JsonSlurper().parseText(response)
             json = sh(script:'jq . < ${response}', returnStdout:true).trim()
+            println "lol"
             println json
             
 
