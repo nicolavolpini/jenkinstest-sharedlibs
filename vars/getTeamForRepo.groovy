@@ -1,4 +1,4 @@
-import groovy.json.JsonSlurper
+// import groovy.json.JsonSlurper
 import groovy.transform.Field
 
 // TODO: pass bearer securely
@@ -36,7 +36,10 @@ def call(repo, bearer) {
         if (getRC == (200)) {
             // def response = get.getInputStream().getText()
             response = get.inputStream.getText()
-            json = new JsonSlurper().parseText(response)
+            // json = new JsonSlurper().parseText(response)
+            json = readJSON text: response
+            
+
 
             for (team in json) {
                 println "Team name:"
