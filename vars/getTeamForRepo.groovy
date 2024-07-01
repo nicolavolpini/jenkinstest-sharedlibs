@@ -40,6 +40,8 @@ def call(repo, bearer) {
             // def response = get.getInputStream().getText()
             response = get.inputStream.getText()
             // json = new JsonSlurper().parseText(response)
+
+            println "lol1"
             json = sh(script:'cat ${response} | jq .', returnStdout:true).trim()
             println "lol"
             println json
