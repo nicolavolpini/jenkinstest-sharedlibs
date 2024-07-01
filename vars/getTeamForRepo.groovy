@@ -32,15 +32,15 @@ def call(repo, bearer) {
         get.setRequestProperty('X-GitHub-Api-Version', '2022-11-28') 
         getRC = get.getResponseCode()
         println "Echoing something"
-        println getRC
-        println get.inputStream.getText()
+        // println getRC
+        // println get.inputStream.getText()
 
 
         if (getRC == (200)) {
             // def response = get.getInputStream().getText()
             response = get.inputStream.getText()
             // json = new JsonSlurper().parseText(response)
-            json = sh(script:'jq . < ${response}', returnStdout:true).trim()
+            json = sh(script:'cat ${response} | jq .', returnStdout:true).trim()
             println "lol"
             println json
             
