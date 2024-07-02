@@ -42,15 +42,9 @@ def call(repo, bearer) {
             // json = new JsonSlurper().parseText(response)
 
             println "lol1"
-            def jq = """
-                whereis cat
-            """ 
-            // def jq = """
-            //     cat ${response} | jq .
-            // """
-            // json = sh(jq)
+            json = sh("id")
             println "lol"
-            // println json
+            println json
             
 
 
