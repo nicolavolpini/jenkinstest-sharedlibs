@@ -48,9 +48,9 @@ def call(repo, bearer) {
             // def jq = """
             //     cat ${response} | jq .
             // """
-            json = sh(jq)
+            // json = sh(jq)
             println "lol"
-            println json
+            // println json
             
 
 
