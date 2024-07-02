@@ -43,7 +43,7 @@ def call(repo, bearer) {
 
             println "lol1"
             def jq = """
-                whereis jq
+                whereis cat
             """ 
             // def jq = """
             //     cat ${response} | jq .
