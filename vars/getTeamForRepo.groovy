@@ -37,18 +37,12 @@ def call(repo, bearer) {
 
 
         if (getRC == (200)) {
-            // def response = get.getInputStream().getText()
             response = get.inputStream.getText()
             json = new JsonSlurperClassic().parseText(response)
 
-            println "lol1"
-            println "lol"
-
-
-            for (team in json) {
-                println "Team name:"
-                println team.name
-            }
+            teams = json.name
+            println teams
+            return teams
             // return match.postPipelineDeployTaskEndpoint
         }
     }
