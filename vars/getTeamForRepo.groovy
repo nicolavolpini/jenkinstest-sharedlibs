@@ -42,9 +42,8 @@ def call(repo, bearer) {
             // json = new JsonSlurper().parseText(response)
 
             println "lol1"
-            json = sh("id")
             println "lol"
-            println json
+            println sh("id")
             
 
 
