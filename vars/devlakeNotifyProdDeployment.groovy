@@ -20,6 +20,8 @@ import groovy.json.JsonOutput
 
 // END vars for local testing
 
+debug = false
+
 /**
 * Main function. Based on the github repo, get the teams owning it and trigger a deployment notification to DevLake.
 */
