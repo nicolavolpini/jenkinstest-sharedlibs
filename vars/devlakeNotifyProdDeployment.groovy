@@ -20,18 +20,17 @@ import groovy.json.JsonOutput
 
 // END vars for local testing
 
-debug = false
 
 /**
 * Main function. Based on the github repo, get the teams owning it and trigger a deployment notification to DevLake.
 */
 def call(Map args) {
     // args: repo, tag, ghbearer, dlbearer
-    if(debug)
-{ 
-    println("- DEBUG: Running main call with: currentBuild: ${currentBuild}, repo: ${args.repo}, version/tag: ${args.version}")
- }
-    
+    debug = true
+    if (debug) {
+        println("- DEBUG: Running main call with: currentBuild: ${currentBuild}, repo: ${args.repo}, version/tag: ${args.version}")
+    }
+
     try {
         def get = new URL('https://api.github.com/repos/plugsurfing/' + args.repo + '/teams').openConnection()
         get.requestMethod = 'GET'
@@ -44,7 +43,7 @@ def call(Map args) {
             response = get.inputStream.getText()
             mainFunctionJson = new JsonSlurperClassic().parseText(response)
             teams = mainFunctionJson.slug
-            
+
             // Run the main block for every team the repo belongs to in GitHub
             for (team in teams) {
                 // Since "Plugsurfing" is a common team with no corresponding DevLake project, skip it.
