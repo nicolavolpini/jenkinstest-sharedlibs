@@ -99,7 +99,7 @@ def call(Map args) {
     else {
         logger.severe ("ERROR: unable to get repo property from Artifactory. Missing 'repo' property in artifact or other error.")
     }
-    // get = null
+    get = null
 }
 /**
 * Obtain the github commit sha corresponding to the release tag
