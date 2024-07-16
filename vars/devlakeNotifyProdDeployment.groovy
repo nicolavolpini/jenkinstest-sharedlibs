@@ -30,74 +30,73 @@ def call(Map args) {
 
     // I am really sorry for this nested if. I shall find a cleaner alternative asap.
     if (repo) {
-    try {
-        get = new URL('https://api.github.com/repos/plugsurfing/' + repo + '/teams').openConnection()
-        get.requestMethod = 'GET'
-        get.setRequestProperty('Content-Type', 'application/json')
-        get.setRequestProperty('Authorization', 'Bearer ' + args.ghbearer)
-        get.setRequestProperty('X-GitHub-Api-Version', '2022-11-28')
-        getRC = get.getResponseCode()
-        getMessage = get.getResponseMessage()
+        try {
+            get = new URL('https://api.github.com/repos/plugsurfing/' + repo + '/teams').openConnection()
+            get.requestMethod = 'GET'
+            get.setRequestProperty('Content-Type', 'application/json')
+            get.setRequestProperty('Authorization', 'Bearer ' + args.ghbearer)
+            get.setRequestProperty('X-GitHub-Api-Version', '2022-11-28')
+            getRC = get.getResponseCode()
+            getMessage = get.getResponseMessage()
 
-        if (getRC == (200)) {
-            response = get.inputStream.getText()
-            mainFunctionJson = new JsonSlurperClassic().parseText(response)
-            teams = mainFunctionJson.slug
+            if (getRC == (200)) {
+                response = get.inputStream.getText()
+                mainFunctionJson = new JsonSlurperClassic().parseText(response)
+                teams = mainFunctionJson.slug
 
-            println("teams prefilter: ${teams}")
+                println("teams prefilter: ${teams}")
 
-            // skip "plugsurfing" since it is a common team with no corresponding DevLake project.
-            teams -= 'plugsurfing'
-            println("teams postfilter: ${teams}")
+                // skip "plugsurfing" since it is a common team with no corresponding DevLake project.
+                teams -= 'plugsurfing'
+                println("teams postfilter: ${teams}")
 
-            if (debug) { logger.info("Teams associated to repo ${repo} excluding Plugsurfing: ${teams}")}
-            println("Teams associated to repo ${repo} excluding Plugsurfing: ${teams}")
+                if (debug) { logger.info("Teams associated to repo ${repo} excluding Plugsurfing: ${teams}")}
+                println("Teams associated to repo ${repo} excluding Plugsurfing: ${teams}")
 
-            // Run the notifier block for every team the repo is associated to in GitHub
+                // Run the notifier block for every team the repo is associated to in GitHub
 
-            // Run only if at least one team is associated to the repo
-            if (teams.size() > 0) {
-                if (debug) { logger.info('Running teams loop.') }
-                // Collect the release SHA from GitHub
-                commitsha = getCommitSha(repo, args.version, args.ghbearer)
-                println("sha ${commitsha}")
-                if (commitsha) {
-                    // Generate the DevLake Payload
-                    payload = generatePayload(repo, commitsha)
-                    println(payload)
-                    for (team in teams) {
-                        // Collect the webhook path programmatically from DevLake
-                        webhook = getWebhook(team, args.dlbearer)
-                        println("webhook ${webhook}")
-                        if (webhook) {
-                            if (debug){ logger.info("Call webhook for team ${team}")}
-                            println("Call webhook for team ${team}")
-                            notifyDeployment(payload, webhook, args.dlbearer)
-                            println("Team: ${team}")
+                // Run only if at least one team is associated to the repo
+                if (teams.size() > 0) {
+                    if (debug) { logger.info('Running teams loop.') }
+                    // Collect the release SHA from GitHub
+                    commitsha = getCommitSha(repo, args.version, args.ghbearer)
+                    println("sha ${commitsha}")
+                    if (commitsha) {
+                        // Generate the DevLake Payload
+                        payload = generatePayload(repo, commitsha)
+                        for (team in teams) {
+                            // Collect the webhook path programmatically from DevLake
+                            webhook = getWebhook(team, args.dlbearer)
+                            println("webhook ${webhook}")
+                            if (webhook) {
+                                if (debug){ logger.info("Call webhook for team ${team}")}
+                                println("Call webhook for team ${team}")
+                                notifyDeployment(payload, webhook, args.dlbearer)
+                                println("Team: ${team}")
+                            }
+                            else {
+                                logger.warning("Team ${team} has no corresponding webhook in DevLake, or unable to reach DevLake.")
+                            }
                         }
-                        else {
-                            logger.warning("Team ${team} has no corresponding webhook in DevLake, or unable to reach DevLake.")
-                        }
+                    }
+                    else {
+                        logger.severe('No valid commit sha found. Exiting')
                     }
                 }
                 else {
-                    logger.severe('No valid commit sha found. Exiting')
+                    logger.warning('Not executing notification script. Probably no teams associated to repo.')
                 }
             }
             else {
-                logger.warning('Not executing notification script. Probably no teams associated to repo.')
+                logger.severe ("ERROR: main function returned code: ${getRC}, message: ${getMessage}. Ensure you are querying the right repo name in GitHub.")
             }
         }
-        else {
-            logger.severe ("ERROR: main function returned code: ${getRC}, message: ${getMessage}. Ensure you are querying the right repo name in GitHub.")
+        catch (Exception e) {
+            logger.severe("GET exception for main function: ${e}")
         }
     }
-    catch (Exception e) {
-        logger.severe ("GET exception for main function: ${e}")
-    }
-    }
     else {
-        logger.severe ("ERROR: unable to get repo property from Artifactory. Missing 'repo' property in artifact or other error.")
+        logger.severe"ERROR: unable to get repo property from Artifactory. Missing 'repo' property in artifact or other error.")
     }
     get = null
 }
@@ -231,7 +230,7 @@ def generatePayload(repo, commitsha) {
     def buildEndTime = currentBuild.startTimeInMillis + currentBuild.duration
     def buildEndTimeClean = new Date(buildEndTime).format('yyyy-MM-dd HH:mm:ss')
     def buildStartTimeClean = new Date(currentBuild.startTimeInMillis).format('yyyy-MM-dd HH:mm:ss')
-    def buildResult = currentBuild.result
+    def buildResult = currentBuild.currentResult
 
     jsonPayload = JsonOutput.toJson([deploymentCommits: [
         [
