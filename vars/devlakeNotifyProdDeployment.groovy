@@ -58,15 +58,19 @@ def call(Map args) {
                 if (debug) { logger.info('Running teams loop.') }
                 // Collect the release SHA from GitHub
                 commitsha = getCommitSha(repo, args.version, args.ghbearer)
+                println(commitsha)
                 if (commitsha) {
                     // Generate the DevLake Payload
                     payload = generatePayload(repo, commitsha)
+                    println(payload)
                     for (team in teams) {
                         // Collect the webhook path programmatically from DevLake
                         webhook = getWebhook(team, args.dlbearer)
+                        println(webhook)
                         if (webhook) {
                             if (debug){ logger.info("Call webhook for team ${team}")}
                             notifyDeployment(payload, webhook, args.dlbearer)
+                            println(team)
                         }
                         else {
                             logger.warning("Team ${team} has no corresponding webhook in DevLake, or unable to reach DevLake.")
@@ -252,8 +256,6 @@ def notifyDeployment(payload, webhook, dlbearer) {
             '${payload}'
         """
     logger.info("Notifying DevLake.")
-
-    println(devlakePublish)
 
     if (debug) {
         logger.info("Curl command: ${devlakePublish}")
