@@ -17,6 +17,7 @@ import java.util.logging.Logger
 /**
 * Main function. Aggregates the sub-functions and runs them based on certain conditions.
 */
+@NonCPS
 def call(Map args) {
     Logger logger = Logger.getLogger('')
     debug = true
