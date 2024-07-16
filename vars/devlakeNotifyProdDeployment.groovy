@@ -96,7 +96,7 @@ def call(Map args) {
         }
     }
     else {
-        logger.severe"ERROR: unable to get repo property from Artifactory. Missing 'repo' property in artifact or other error.")
+        logger.severe("ERROR: unable to get repo property from Artifactory. Missing 'repo' property in artifact or other error.")
     }
     get = null
 }
