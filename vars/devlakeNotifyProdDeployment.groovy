@@ -126,7 +126,7 @@ def getCommitSha(repo, version, ghbearer) {
     catch (Exception e) {
         logger.severe("GET exception: ${e}")
     }
-    get = null
+    // get = null
 }
 
 /**
@@ -157,7 +157,7 @@ def getRepoName(appname, version, artifactorybearer) {
     catch (Exception e) {
         logger.severe("GET exception: ${e}")
     }
-    get = null
+    // get = null
 }
 
 /**
@@ -206,7 +206,7 @@ def getWebhook(teamName, dlbearer) {
     catch (Exception e) {
         logger.severe ("GET exception: ${e}")
     }
-    get = null
+    // get = null
 }
 /**
 * Generate the payload to be passed to the Devlake webhook
