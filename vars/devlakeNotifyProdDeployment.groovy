@@ -25,6 +25,8 @@ def call(Map args) {
     // repo = getRepoName(args.appname, args.version, args.artifactorybearer)
     repo = 'dummy-svc'
 
+    println("Hello from main function!")
+
     if (debug) { logger.info ("Running main call with params: currentBuild: ${currentBuild}, repo: ${repo}, version/tag: ${args.version}") }
 
     // I am really sorry for this nested if. I shall find a cleaner alternative asap.
