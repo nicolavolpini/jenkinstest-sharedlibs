@@ -46,8 +46,11 @@ def call(Map args) {
             mainFunctionJson = new JsonSlurperClassic().parseText(response)
             teams = mainFunctionJson.slug
 
+            println("teams prefilter: ${teams}")
+
             // skip "plugsurfing" since it is a common team with no corresponding DevLake project.
             teams -= 'plugsurfing'
+            println("teams postfilter: ${teams}")
 
             if (debug) { logger.info("Teams associated to repo ${repo} excluding Plugsurfing: ${teams}")}
 
@@ -58,7 +61,7 @@ def call(Map args) {
                 if (debug) { logger.info('Running teams loop.') }
                 // Collect the release SHA from GitHub
                 commitsha = getCommitSha(repo, args.version, args.ghbearer)
-                println(commitsha)
+                println("sha ${commitsha}")
                 if (commitsha) {
                     // Generate the DevLake Payload
                     payload = generatePayload(repo, commitsha)
@@ -66,11 +69,11 @@ def call(Map args) {
                     for (team in teams) {
                         // Collect the webhook path programmatically from DevLake
                         webhook = getWebhook(team, args.dlbearer)
-                        println(webhook)
+                        println("webhook ${webhook}")
                         if (webhook) {
                             if (debug){ logger.info("Call webhook for team ${team}")}
                             notifyDeployment(payload, webhook, args.dlbearer)
-                            println(team)
+                            println("Team: ${team}")
                         }
                         else {
                             logger.warning("Team ${team} has no corresponding webhook in DevLake, or unable to reach DevLake.")
