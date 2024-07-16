@@ -39,6 +39,7 @@ def call(Map args) {
         get.setRequestProperty('X-GitHub-Api-Version', '2022-11-28')
         getRC = get.getResponseCode()
         getMessage = get.getResponseMessage()
+        println(getRC)
 
         if (getRC == (200)) {
             response = get.inputStream.getText()
