@@ -93,6 +93,7 @@ def call(Map args) {
 /**
 * Obtain the github commit sha corresponding to the release tag
 */
+@NonCPS
 def getCommitSha(repo, version, ghbearer) {
     Logger logger = Logger.getLogger("")
 
@@ -130,6 +131,7 @@ def getCommitSha(repo, version, ghbearer) {
 /**
 * Obtain the GitHub repo name from Artifactory
 */
+@NonCPS
 def getRepoName(appname, version, artifactorybearer) {
     Logger logger = Logger.getLogger("")
 
@@ -161,6 +163,7 @@ def getRepoName(appname, version, artifactorybearer) {
 * Obtain the correct webhook from the DevLake API based on the GitHub team name.
 * It expects the DevLake webhook to be named EXACTLY `<github-team-slug>-webhook`.
 */
+@NonCPS
 def getWebhook(teamName, dlbearer) {
     Logger logger = Logger.getLogger("")
     webhook = teamName + '-webhook'
@@ -206,6 +209,7 @@ def getWebhook(teamName, dlbearer) {
 /**
 * Generate the payload to be passed to the Devlake webhook
 */
+@NonCPS
 def generatePayload(repo, commitsha) {
 
     // Process deployment data
@@ -236,6 +240,7 @@ def generatePayload(repo, commitsha) {
 /**
 * Call the DevLake deployment webhook
 */
+@NonCPS
 def notifyDeployment(payload, webhook, dlbearer) {
     Logger logger = Logger.getLogger("")
     def devlakePublish = """
