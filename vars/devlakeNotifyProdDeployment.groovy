@@ -25,9 +25,8 @@ def call(Map args) {
     // repo = getRepoName(args.appname, args.version, args.artifactorybearer)
     repo = 'dummy-svc'
 
-    println("Hello from main function!")
-
     if (debug) { logger.info ("Running main call with params: currentBuild: ${currentBuild}, repo: ${repo}, version/tag: ${args.version}") }
+    println("Running main call with params: currentBuild: ${currentBuild}, repo: ${repo}, version/tag: ${args.version}")
 
     // I am really sorry for this nested if. I shall find a cleaner alternative asap.
     if (repo) {
@@ -39,7 +38,6 @@ def call(Map args) {
         get.setRequestProperty('X-GitHub-Api-Version', '2022-11-28')
         getRC = get.getResponseCode()
         getMessage = get.getResponseMessage()
-        println(getRC)
 
         if (getRC == (200)) {
             response = get.inputStream.getText()
@@ -53,6 +51,7 @@ def call(Map args) {
             println("teams postfilter: ${teams}")
 
             if (debug) { logger.info("Teams associated to repo ${repo} excluding Plugsurfing: ${teams}")}
+            println("Teams associated to repo ${repo} excluding Plugsurfing: ${teams}")
 
             // Run the notifier block for every team the repo is associated to in GitHub
 
@@ -72,6 +71,7 @@ def call(Map args) {
                         println("webhook ${webhook}")
                         if (webhook) {
                             if (debug){ logger.info("Call webhook for team ${team}")}
+                            println("Call webhook for team ${team}")
                             notifyDeployment(payload, webhook, args.dlbearer)
                             println("Team: ${team}")
                         }
@@ -121,12 +121,14 @@ def getCommitSha(repo, version, ghbearer) {
         getRC = get.getResponseCode()
         getResponseMessage = get.getResponseMessage()
         if (debug) { logger.info("Requesting SHA for repo: ${repo}, version: ${version}") }
+        println("Requesting SHA for repo: ${repo}, version: ${version}")
 
         if (getRC == (200)) {
             response = get.inputStream.getText()
             shaJson = new JsonSlurperClassic().parseText(response)
             sha = shaJson.object.sha
             if (debug) { logger.info("Returned SHA value is ${sha}") }
+            println("Returned SHA value is ${sha}")
             return sha
         }
         else {
@@ -152,6 +154,7 @@ def getRepoName(appname, version, artifactorybearer) {
         getRC = get.getResponseCode()
         getResponseMessage = get.getResponseMessage()
         if (debug) { logger.info("Requesting sha for appname: ${appname}, version: ${version}") }
+        println("Requesting sha for appname: ${appname}, version: ${version}")
 
         if (getRC == (200)) {
             response = get.inputStream.getText()
@@ -180,6 +183,7 @@ def getWebhook(teamName, dlbearer) {
     if (debug) {
         logger.info("Requesting webhook path from DevLake. Webhook name requested: ${webhook}")
     }
+    println("Requesting webhook path from DevLake. Webhook name requested: ${webhook}")
 
     try {
         def get = new URL('https://devlake-configui.central.plugsurfing-infra.com/api/rest/plugins/webhook/connections').openConnection()
@@ -259,6 +263,8 @@ def notifyDeployment(payload, webhook, dlbearer) {
             '${payload}'
         """
     logger.info("Notifying DevLake.")
+
+    println("Curl: ${devlakePublish}")
 
     if (debug) {
         logger.info("Curl command: ${devlakePublish}")
