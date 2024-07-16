@@ -17,7 +17,6 @@ import java.util.logging.Logger
 /**
 * Main function. Aggregates the sub-functions and runs them based on certain conditions.
 */
-@NonCPS
 def call(Map args) {
     Logger logger = Logger.getLogger('')
     debug = true
@@ -90,11 +89,11 @@ def call(Map args) {
     else {
         logger.severe ("ERROR: unable to get repo property from Artifactory. Missing 'repo' property in artifact or other error.")
     }
+    get = null
 }
 /**
 * Obtain the github commit sha corresponding to the release tag
 */
-@NonCPS
 def getCommitSha(repo, version, ghbearer) {
     Logger logger = Logger.getLogger("")
 
@@ -127,12 +126,12 @@ def getCommitSha(repo, version, ghbearer) {
     catch (Exception e) {
         logger.severe("GET exception: ${e}")
     }
+    get = null
 }
 
 /**
 * Obtain the GitHub repo name from Artifactory
 */
-@NonCPS
 def getRepoName(appname, version, artifactorybearer) {
     Logger logger = Logger.getLogger("")
 
@@ -158,13 +157,13 @@ def getRepoName(appname, version, artifactorybearer) {
     catch (Exception e) {
         logger.severe("GET exception: ${e}")
     }
+    get = null
 }
 
 /**
 * Obtain the correct webhook from the DevLake API based on the GitHub team name.
 * It expects the DevLake webhook to be named EXACTLY `<github-team-slug>-webhook`.
 */
-@NonCPS
 def getWebhook(teamName, dlbearer) {
     Logger logger = Logger.getLogger("")
     webhook = teamName + '-webhook'
@@ -178,6 +177,7 @@ def getWebhook(teamName, dlbearer) {
         get.setRequestProperty('Content-Type', 'application/json')
         get.setRequestProperty('Authorization', 'Bearer ' + dlbearer)
         getRC = get.getResponseCode()
+
 
         if (getRC == (200)) {
             response = get.inputStream.getText()
@@ -206,11 +206,11 @@ def getWebhook(teamName, dlbearer) {
     catch (Exception e) {
         logger.severe ("GET exception: ${e}")
     }
+    get = null
 }
 /**
 * Generate the payload to be passed to the Devlake webhook
 */
-@NonCPS
 def generatePayload(repo, commitsha) {
 
     // Process deployment data
@@ -241,7 +241,6 @@ def generatePayload(repo, commitsha) {
 /**
 * Call the DevLake deployment webhook
 */
-@NonCPS
 def notifyDeployment(payload, webhook, dlbearer) {
     Logger logger = Logger.getLogger("")
     def devlakePublish = """
