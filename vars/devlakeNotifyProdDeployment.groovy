@@ -1,6 +1,5 @@
 import groovy.json.JsonSlurperClassic
 import groovy.json.JsonOutput
-import java.util.logging.Logger
 
 /** This script is meant to be run by Jenkins. It collects infos about a prod deployment and
 * notifies DevLake by calling a webhook specific to the team.
@@ -18,15 +17,13 @@ import java.util.logging.Logger
 * Main function. Aggregates the sub-functions and runs them based on certain conditions.
 */
 def call(Map args) {
-    Logger logger = Logger.getLogger('')
     debug = true
 
     // Collect the Repo corresponding to the app/service
     // repo = getRepoName(args.appname, args.version, args.artifactorybearer)
     repo = 'dummy-svc'
 
-    if (debug) { logger.info ("Running main call with params: currentBuild: ${currentBuild}, repo: ${repo}, version/tag: ${args.version}") }
-    println("Running main call with params: currentBuild: ${currentBuild}, repo: ${repo}, version/tag: ${args.version}")
+    if (debug) { println("Running main call with params: currentBuild: ${currentBuild}, repo: ${repo}, version/tag: ${args.version}") }
 
     // I am really sorry for this nested if. I shall find a cleaner alternative asap.
     if (repo) {
@@ -44,59 +41,53 @@ def call(Map args) {
                 mainFunctionJson = new JsonSlurperClassic().parseText(response)
                 teams = mainFunctionJson.slug
 
-                println("teams prefilter: ${teams}")
 
                 // skip "plugsurfing" since it is a common team with no corresponding DevLake project.
                 teams -= 'plugsurfing'
-                println("teams postfilter: ${teams}")
 
-                if (debug) { logger.info("Teams associated to repo ${repo} excluding Plugsurfing: ${teams}")}
-                println("Teams associated to repo ${repo} excluding Plugsurfing: ${teams}")
+                if (debug) { println("Teams associated to repo ${repo} excluding Plugsurfing: ${teams}")}
 
                 // Run the notifier block for every team the repo is associated to in GitHub
 
                 // Run only if at least one team is associated to the repo
                 if (teams.size() > 0) {
-                    if (debug) { logger.info('Running teams loop.') }
+                    if (debug) { println('Running teams loop.') }
                     // Collect the release SHA from GitHub
                     commitsha = getCommitSha(repo, args.version, args.ghbearer)
-                    println("sha ${commitsha}")
                     if (commitsha) {
                         // Generate the DevLake Payload
                         payload = generatePayload(repo, commitsha)
                         for (team in teams) {
                             // Collect the webhook path programmatically from DevLake
                             webhook = getWebhook(team, args.dlbearer)
-                            println("webhook ${webhook}")
                             if (webhook) {
-                                if (debug){ logger.info("Call webhook for team ${team}")}
-                                println("Call webhook for team ${team}")
+                                if (debug){ println("Call webhook for team ${team}")}
+
                                 notifyDeployment(payload, webhook, args.dlbearer)
-                                println("Team: ${team}")
                             }
                             else {
-                                logger.warning("Team ${team} has no corresponding webhook in DevLake, or unable to reach DevLake.")
+                                println("Team ${team} has no corresponding webhook in DevLake, or unable to reach DevLake.")
                             }
                         }
                     }
                     else {
-                        logger.severe('No valid commit sha found. Exiting')
+                        println('No valid commit sha found. Exiting')
                     }
                 }
                 else {
-                    logger.warning('Not executing notification script. Probably no teams associated to repo.')
+                    println('Not executing notification script. Probably no teams associated to repo.')
                 }
             }
             else {
-                logger.severe ("ERROR: main function returned code: ${getRC}, message: ${getMessage}. Ensure you are querying the right repo name in GitHub.")
+                println("ERROR: main function returned code: ${getRC}, message: ${getMessage}. Ensure you are querying the right repo name in GitHub.")
             }
         }
         catch (Exception e) {
-            logger.severe("GET exception for main function: ${e}")
+            println("ERROR: GET exception for main function: ${e}")
         }
     }
     else {
-        logger.severe("ERROR: unable to get repo property from Artifactory. Missing 'repo' property in artifact or other error.")
+        println("ERROR: unable to get repo property from Artifactory. Missing 'repo' property in artifact or other error.")
     }
     get = null
 }
@@ -104,12 +95,10 @@ def call(Map args) {
 * Obtain the github commit sha corresponding to the release tag
 */
 def getCommitSha(repo, version, ghbearer) {
-    Logger logger = Logger.getLogger("")
-
     // encode special chars such as '@' so the GH API does not freak out
     encodedVersion = java.net.URLEncoder.encode(version, 'UTF-8')
 
-    if (debug) { logger.info("Encoded tag/version:  ${encodedVersion}") }
+    if (debug) { println("Encoded tag/version: ${encodedVersion}") }
 
     try {
         def get = new URL("https://api.github.com/repos/plugsurfing/${repo}/git/ref/tags/${encodedVersion}").openConnection()
@@ -119,23 +108,21 @@ def getCommitSha(repo, version, ghbearer) {
         get.setRequestProperty('X-GitHub-Api-Version', '2022-11-28')
         getRC = get.getResponseCode()
         getResponseMessage = get.getResponseMessage()
-        if (debug) { logger.info("Requesting SHA for repo: ${repo}, version: ${version}") }
-        println("Requesting SHA for repo: ${repo}, version: ${version}")
+        if (debug) { println("Requesting SHA for repo: ${repo}, version: ${version}") }
 
         if (getRC == (200)) {
             response = get.inputStream.getText()
             shaJson = new JsonSlurperClassic().parseText(response)
             sha = shaJson.object.sha
-            if (debug) { logger.info("Returned SHA value is ${sha}") }
-            println("Returned SHA value is ${sha}")
+            if (debug) { println("Returned SHA value is ${sha}") }
             return sha
         }
         else {
-            logger.severe("No valid commit sha. Returned response code: ${getRC}, message ${getResponseMessage}. Check whether the version/tag exists for that repo/branch.")
+            println("ERROR: No valid commit sha. Returned response code: ${getRC}, message ${getResponseMessage}. Check whether the version/tag exists for that repo/branch.")
         }
     }
     catch (Exception e) {
-        logger.severe("GET exception: ${e}")
+        println("ERROR: GET exception: ${e}")
     }
     get = null
 }
@@ -144,30 +131,27 @@ def getCommitSha(repo, version, ghbearer) {
 * Obtain the GitHub repo name from Artifactory
 */
 def getRepoName(appname, version, artifactorybearer) {
-    Logger logger = Logger.getLogger("")
-
     try {
         def get = new URL("https://plugsurfing.jfrog.io/artifactory/api/storage/ps-generic/${appname}/${version}?properties=repo").openConnection()
         get.requestMethod = 'GET'
         get.setRequestProperty('X-JFrog-Art-Api', artifactorybearer)
         getRC = get.getResponseCode()
         getResponseMessage = get.getResponseMessage()
-        if (debug) { logger.info("Requesting sha for appname: ${appname}, version: ${version}") }
-        println("Requesting sha for appname: ${appname}, version: ${version}")
+        if (debug) { println("Requesting sha for appname: ${appname}, version: ${version}") }
 
         if (getRC == (200)) {
             response = get.inputStream.getText()
             artifactoryJson = new JsonSlurperClassic().parseText(response)
             repo = artifactoryJson.properties.repo[0]
-            if (debug) { logger.info("Returned repo value is ${repo}") }
+            if (debug) { println("Returned repo value is ${repo}") }
             return repo
         }
         else {
-            logger.severe("No valid repo returned. Returned response code: ${getRC}, message ${getResponseMessage}. Check whether the repo property exists for the artifact in Artifactory.")
+            println("ERROR: No valid repo returned. Returned response code: ${getRC}, message ${getResponseMessage}. Check whether the repo property exists for the artifact in Artifactory.")
         }
     }
     catch (Exception e) {
-        logger.severe("GET exception: ${e}")
+        println("ERROR: GET exception: ${e}")
     }
     get = null
 }
@@ -177,12 +161,10 @@ def getRepoName(appname, version, artifactorybearer) {
 * It expects the DevLake webhook to be named EXACTLY `<github-team-slug>-webhook`.
 */
 def getWebhook(teamName, dlbearer) {
-    Logger logger = Logger.getLogger("")
     webhook = teamName + '-webhook'
     if (debug) {
-        logger.info("Requesting webhook path from DevLake. Webhook name requested: ${webhook}")
+        println("Requesting webhook path from DevLake. Webhook name requested: ${webhook}")
     }
-    println("Requesting webhook path from DevLake. Webhook name requested: ${webhook}")
 
     try {
         def get = new URL('https://devlake-configui.central.plugsurfing-infra.com/api/rest/plugins/webhook/connections').openConnection()
@@ -201,23 +183,23 @@ def getWebhook(teamName, dlbearer) {
             if (match) {
                 endpoint = match.postPipelineDeployTaskEndpoint
                 if (debug) {
-                    logger.info("Webhook path returned: ${endpoint}")
+                    println("Webhook path returned: ${endpoint}")
                 }
                 return endpoint
             }
             else {
                 if (debug) {
-                    logger.severe("ERROR: no valid webhook path returned.")
+                    println("ERROR: no valid webhook path returned.")
                 }
                 return null
             }
         }
         else {
-            logger.severe "ERROR: getWebhook function returned response code: ${getRC}"
+            println("ERROR: getWebhook function returned response code: ${getRC}")
         }
     }
     catch (Exception e) {
-        logger.severe ("GET exception: ${e}")
+        println("ERROR: GET exception: ${e}")
     }
     get = null
 }
@@ -255,17 +237,14 @@ def generatePayload(repo, commitsha) {
 * Call the DevLake deployment webhook
 */
 def notifyDeployment(payload, webhook, dlbearer) {
-    Logger logger = Logger.getLogger("")
     def devlakePublish = """
             curl https://devlake-configui.central.plugsurfing-infra.com/api${webhook} -X 'POST' -H 'Authorization: Bearer
             <hidden>' -d 
             '${payload}'
         """
-    logger.info("Notifying DevLake.")
-
-    println("Curl: ${devlakePublish}")
+    println("Notifying DevLake.")
 
     if (debug) {
-        logger.info("Curl command: ${devlakePublish}")
+        println("Curl command: ${devlakePublish}")
     }
 }
