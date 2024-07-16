@@ -253,6 +253,8 @@ def notifyDeployment(payload, webhook, dlbearer) {
         """
     logger.info("Notifying DevLake.")
 
+    println(devlakePublish)
+
     if (debug) {
         logger.info("Curl command: ${devlakePublish}")
     }
