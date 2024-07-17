@@ -21,7 +21,7 @@ def call(Map args) {
     debug = args.debug ?: false
 
     // Collect the Repo corresponding to the app/service
-    repo = getRepoName(args.appname, args.version, args.artifactorybearer)
+    repo = getRepoName(args.appname, args.version, args.afbearer)
 
     if (debug) { println("DEVLAKE DEBUG: Running main call with params: currentBuild: ${currentBuild}, repo: ${repo}, version/tag: ${args.version}") }
 
@@ -132,22 +132,23 @@ def getCommitSha(repo, version, ghbearer) {
 */
 def getRepoName(appname, version, artifactorybearer) {
     try {
-        def get = new URL("https://plugsurfing.jfrog.io/artifactory/api/storage/ps-generic/${appname}/${version}?properties=repo").openConnection()
+        url = "https://plugsurfing.jfrog.io/artifactory/api/storage/ps-generic/${appname}/${version}?properties=repo"
+        def get = new URL(url).openConnection()
         get.requestMethod = 'GET'
         get.setRequestProperty('X-JFrog-Art-Api', artifactorybearer)
         getRC = get.getResponseCode()
         getResponseMessage = get.getResponseMessage()
-        if (debug) { println("DEVLAKE DEBUG: Requesting sha for appname: ${appname}, version: ${version}") }
+        if (debug) { println("DEVLAKE DEBUG: Requesting repo info for appname: ${appname}, version: ${version}. Artifactory url: ${url}") }
 
         if (getRC == (200)) {
             response = get.inputStream.getText()
             artifactoryJson = new JsonSlurperClassic().parseText(response)
             repo = artifactoryJson.properties.repo[0]
-            if (debug) { println("DEVLAKE DEBUG: Returned repo value is ${repo}") }
+            if (debug) { println("DEVLAKE DEBUG: Returned repo value from Artifactory: ${repo}") }
             return repo
         }
         else {
-            println("DEVLAKE DEBUG: ERROR: No valid repo returned. Returned response code: ${getRC}, message ${getResponseMessage}. Check whether the repo property exists for the artifact in Artifactory.")
+            println("DEVLAKE DEBUG: ERROR: No valid repo returned. Returned response code: ${getRC}, message ${getResponseMessage}. Check whether the repo property exists for the artifact in Artifactory or whether you can connect to Artifactory.")
         }
     }
     catch (Exception e) {
