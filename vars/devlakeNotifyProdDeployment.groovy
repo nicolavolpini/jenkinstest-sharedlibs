@@ -17,13 +17,13 @@ import groovy.json.JsonOutput
 * Main function. Aggregates the sub-functions and runs them based on certain conditions.
 */
 def call(Map args) {
-    debug = true
+    
+    debug = args.debug ?: false
 
     // Collect the Repo corresponding to the app/service
-    // repo = getRepoName(args.appname, args.version, args.artifactorybearer)
-    repo = 'dummy-svc'
+    repo = getRepoName(args.appname, args.version, args.artifactorybearer)
 
-    if (debug) { println("Running main call with params: currentBuild: ${currentBuild}, repo: ${repo}, version/tag: ${args.version}") }
+    if (debug) { println("DEVLAKE DEBUG: Running main call with params: currentBuild: ${currentBuild}, repo: ${repo}, version/tag: ${args.version}") }
 
     // I am really sorry for this nested if. I shall find a cleaner alternative asap.
     if (repo) {
@@ -45,13 +45,13 @@ def call(Map args) {
                 // skip "plugsurfing" since it is a common team with no corresponding DevLake project.
                 teams -= 'plugsurfing'
 
-                if (debug) { println("Teams associated to repo ${repo} excluding Plugsurfing: ${teams}")}
+                if (debug) { println("DEVLAKE DEBUG: Teams associated to repo ${repo} excluding Plugsurfing: ${teams}")}
 
                 // Run the notifier block for every team the repo is associated to in GitHub
 
                 // Run only if at least one team is associated to the repo
                 if (teams.size() > 0) {
-                    if (debug) { println('Running teams loop.') }
+                    if (debug) { println('DEVLAKE DEBUG: Running teams loop.') }
                     // Collect the release SHA from GitHub
                     commitsha = getCommitSha(repo, args.version, args.ghbearer)
                     if (commitsha) {
@@ -61,33 +61,33 @@ def call(Map args) {
                             // Collect the webhook path programmatically from DevLake
                             webhook = getWebhook(team, args.dlbearer)
                             if (webhook) {
-                                if (debug){ println("Call webhook for team ${team}")}
+                                if (debug){ println("DEVLAKE DEBUG: Call webhook for team ${team}")}
 
                                 notifyDeployment(payload, webhook, args.dlbearer)
                             }
                             else {
-                                println("Team ${team} has no corresponding webhook in DevLake, or unable to reach DevLake.")
+                                println("DEVLAKE DEBUG: Team ${team} has no corresponding webhook in DevLake, or unable to reach DevLake.")
                             }
                         }
                     }
                     else {
-                        println('No valid commit sha found. Exiting')
+                        println('DEVLAKE DEBUG: No valid commit sha found. Exiting')
                     }
                 }
                 else {
-                    println('Not executing notification script. Probably no teams associated to repo.')
+                    println('DEVLAKE DEBUG: Not executing notification script. Probably no teams associated to repo.')
                 }
             }
             else {
-                println("ERROR: main function returned code: ${getRC}, message: ${getMessage}. Ensure you are querying the right repo name in GitHub.")
+                println("DEVLAKE DEBUG: ERROR: main function returned code: ${getRC}, message: ${getMessage}. Ensure you are querying the right repo name in GitHub.")
             }
         }
         catch (Exception e) {
-            println("ERROR: GET exception for main function: ${e}")
+            println("DEVLAKE DEBUG: ERROR: GET exception for main function: ${e}")
         }
     }
     else {
-        println("ERROR: unable to get repo property from Artifactory. Missing 'repo' property in artifact or other error.")
+        println("DEVLAKE DEBUG: ERROR: unable to get repo property from Artifactory. Missing 'repo' property in artifact or other error.")
     }
     get = null
 }
@@ -98,7 +98,7 @@ def getCommitSha(repo, version, ghbearer) {
     // encode special chars such as '@' so the GH API does not freak out
     encodedVersion = java.net.URLEncoder.encode(version, 'UTF-8')
 
-    if (debug) { println("Encoded tag/version: ${encodedVersion}") }
+    if (debug) { println("DEVLAKE DEBUG: Encoded tag/version: ${encodedVersion}") }
 
     try {
         def get = new URL("https://api.github.com/repos/plugsurfing/${repo}/git/ref/tags/${encodedVersion}").openConnection()
@@ -108,21 +108,21 @@ def getCommitSha(repo, version, ghbearer) {
         get.setRequestProperty('X-GitHub-Api-Version', '2022-11-28')
         getRC = get.getResponseCode()
         getResponseMessage = get.getResponseMessage()
-        if (debug) { println("Requesting SHA for repo: ${repo}, version: ${version}") }
+        if (debug) { println("DEVLAKE DEBUG: Requesting SHA for repo: ${repo}, version: ${version}") }
 
         if (getRC == (200)) {
             response = get.inputStream.getText()
             shaJson = new JsonSlurperClassic().parseText(response)
             sha = shaJson.object.sha
-            if (debug) { println("Returned SHA value is ${sha}") }
+            if (debug) { println("DEVLAKE DEBUG: Returned SHA value is ${sha}") }
             return sha
         }
         else {
-            println("ERROR: No valid commit sha. Returned response code: ${getRC}, message ${getResponseMessage}. Check whether the version/tag exists for that repo/branch.")
+            println("DEVLAKE DEBUG: ERROR: No valid commit sha. Returned response code: ${getRC}, message ${getResponseMessage}. Check whether the version/tag exists for that repo/branch.")
         }
     }
     catch (Exception e) {
-        println("ERROR: GET exception: ${e}")
+        println("DEVLAKE DEBUG: ERROR: GET exception: ${e}")
     }
     get = null
 }
@@ -137,21 +137,21 @@ def getRepoName(appname, version, artifactorybearer) {
         get.setRequestProperty('X-JFrog-Art-Api', artifactorybearer)
         getRC = get.getResponseCode()
         getResponseMessage = get.getResponseMessage()
-        if (debug) { println("Requesting sha for appname: ${appname}, version: ${version}") }
+        if (debug) { println("DEVLAKE DEBUG: Requesting sha for appname: ${appname}, version: ${version}") }
 
         if (getRC == (200)) {
             response = get.inputStream.getText()
             artifactoryJson = new JsonSlurperClassic().parseText(response)
             repo = artifactoryJson.properties.repo[0]
-            if (debug) { println("Returned repo value is ${repo}") }
+            if (debug) { println("DEVLAKE DEBUG: Returned repo value is ${repo}") }
             return repo
         }
         else {
-            println("ERROR: No valid repo returned. Returned response code: ${getRC}, message ${getResponseMessage}. Check whether the repo property exists for the artifact in Artifactory.")
+            println("DEVLAKE DEBUG: ERROR: No valid repo returned. Returned response code: ${getRC}, message ${getResponseMessage}. Check whether the repo property exists for the artifact in Artifactory.")
         }
     }
     catch (Exception e) {
-        println("ERROR: GET exception: ${e}")
+        println("DEVLAKE DEBUG: ERROR: GET exception: ${e}")
     }
     get = null
 }
@@ -163,7 +163,7 @@ def getRepoName(appname, version, artifactorybearer) {
 def getWebhook(teamName, dlbearer) {
     webhook = teamName + '-webhook'
     if (debug) {
-        println("Requesting webhook path from DevLake. Webhook name requested: ${webhook}")
+        println("DEVLAKE DEBUG: Requesting webhook path from DevLake. Webhook name requested: ${webhook}")
     }
 
     try {
@@ -183,23 +183,23 @@ def getWebhook(teamName, dlbearer) {
             if (match) {
                 endpoint = match.postPipelineDeployTaskEndpoint
                 if (debug) {
-                    println("Webhook path returned: ${endpoint}")
+                    println("DEVLAKE DEBUG: Webhook path returned: ${endpoint}")
                 }
                 return endpoint
             }
             else {
                 if (debug) {
-                    println("ERROR: no valid webhook path returned.")
+                    println("DEVLAKE DEBUG: ERROR: no valid webhook path returned.")
                 }
                 return null
             }
         }
         else {
-            println("ERROR: getWebhook function returned response code: ${getRC}")
+            println("DEVLAKE DEBUG: ERROR: getWebhook function returned response code: ${getRC}")
         }
     }
     catch (Exception e) {
-        println("ERROR: GET exception: ${e}")
+        println("DEVLAKE DEBUG: ERROR: GET exception: ${e}")
     }
     get = null
 }
@@ -242,9 +242,9 @@ def notifyDeployment(payload, webhook, dlbearer) {
             <hidden>' -d 
             '${payload}'
         """
-    println("Notifying DevLake.")
+    println("DEVLAKE: Notifying DevLake.")
 
     if (debug) {
-        println("Curl command: ${devlakePublish}")
+        println("DEVLAKE DEBUG: Curl command: ${devlakePublish}")
     }
 }
