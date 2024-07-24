@@ -2,9 +2,10 @@ import groovy.json.JsonSlurperClassic
 import groovy.json.JsonOutput
 
 /** This script is meant to be run by Jenkins. It collects infos about a prod deployment and
-* notifies DevLake by calling a webhook specific to the team.
+* notifies DevLake by calling the webhook corresponding to the repo's team.
 * In detail: based on the service being deployed, the script fetches the PR commit SHA and repo from GitHub,
 * finds the correct DevLake webhook and calls the webhook with the deployment infos.
+* Extra info: https://plugsurfing.atlassian.net/wiki/spaces/LA005382/pages/3151101960/DevLake+Glue+Scripts#Glue-Script-1:-Notify-Devlake-from-Jenkins
 *
 * Expected parameters:
 * - application name
@@ -244,9 +245,9 @@ def generatePayload(repo, commitsha) {
 }
 
 /**
-* Call the DevLake deployment webhook
+* Print the DevLake JSON payload. Can be used for debugging purposes
 */
-def notifyDeployment(payload, webhook, dlbearer) {
+def notifyDeploymentDryrun(payload, webhook, dlbearer) {
     def devlakePublish = """
             curl https://devlake-configui.central.plugsurfing-infra.com/api${webhook} -X 'POST' -H 'Authorization: Bearer
             <hidden>' -d 
@@ -259,10 +260,9 @@ def notifyDeployment(payload, webhook, dlbearer) {
     }
 }
 /**
-* Obtain the correct webhook from the DevLake API based on the GitHub team name.
-* It expects the DevLake webhook to be named EXACTLY `<github-team-slug>-webhook`.
+* Push the deployment infos as JSON to a specific DevLake webhook
 */
-def notifyDeploymentx(payload, webhook, dlbearer) {
+def notifyDeployment(payload, webhook, dlbearer) {
     if (debug) {
         println("DEVLAKE DEBUG: Running notification function with following webhook: ${webhook}")
     }

@@ -1,4 +1,50 @@
-# Test header
+The library expects the following parameters:
 
-documentation here...
 
+**Passed by Jenkins:**
+
+currentBuild.startTimeInMillis
+currentBuild.duration
+currentBuild.currentResult
+
+**Passed as build parameters:**
+
+params.version
+params.appName
+
+**Passed as credentials:**
+
+ghbearer - GitHub bearer with RO access
+dlbearer - DevLake bearer with RW access to webhooks
+afbearer - Artifactory bearer with RO access to Artifacts
+
+**Optional:**
+
+debug: true|false (default false)
+
+
+**Example usage wrapped around `withCredentials`:**
+
+```
+pipeline {
+    agent any
+
+    stages {
+        stage('notify-deployment') {
+            steps {
+                script{
+                    withCredentials([
+                        string(credentialsId: 'github-token', variable: 'ghbearer'),
+                        string(credentialsId: 'dl-token', variable: 'dlbearer'),
+                        string(credentialsId: 'artifactory-token', variable: 'afbearer')
+                    ])
+                        {
+                            devlakeNotifyProdDeployment(appname: params.appName, version: params.version, ghbearer: ghbearer, dlbearer: dlbearer, afbearer: afbearer, debug:true)
+                        }
+                }
+            }
+        }
+    }
+}
+
+```
