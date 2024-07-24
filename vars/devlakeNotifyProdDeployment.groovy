@@ -3,7 +3,7 @@ import groovy.json.JsonOutput
 
 /** This script is meant to be run by Jenkins. It collects infos about a prod deployment and
 * notifies DevLake by calling a webhook specific to the team.
-* In essence: based on the service being deployed, the script grabs the PR commit SHA and repo from GitHub,
+* In detail: based on the service being deployed, the script fetches the PR commit SHA and repo from GitHub,
 * finds the correct DevLake webhook and calls the webhook with the deployment infos.
 *
 * Expected parameters:
@@ -17,13 +17,12 @@ import groovy.json.JsonOutput
 * Main function. Aggregates the sub-functions and runs them based on certain conditions.
 */
 def call(Map args) {
-    
     debug = args.debug ?: false
 
     // Collect the Repo corresponding to the app/service
     repo = getRepoName(args.appname, args.version, args.afbearer)
 
-    if (debug) { println("DEVLAKE DEBUG: Running main call with params: currentBuild: ${currentBuild}, repo: ${repo}, version/tag: ${args.version}") }
+    if (debug) { println("DEVLAKE DEBUG: Running main function with following parameters: currentBuild: ${currentBuild}, repo: ${repo}, version/tag: ${args.version}") }
 
     // I am really sorry for this nested if. I shall find a cleaner alternative asap.
     if (repo) {
@@ -41,7 +40,6 @@ def call(Map args) {
                 mainFunctionJson = new JsonSlurperClassic().parseText(response)
                 teams = mainFunctionJson.slug
 
-
                 // skip "plugsurfing" since it is a common team with no corresponding DevLake project.
                 teams -= 'plugsurfing'
 
@@ -51,7 +49,7 @@ def call(Map args) {
 
                 // Run only if at least one team is associated to the repo
                 if (teams.size() > 0) {
-                    if (debug) { println('DEVLAKE DEBUG: Running teams loop.') }
+                    if (debug) { println('DEVLAKE DEBUG: Running teams loop') }
                     // Collect the release SHA from GitHub
                     commitsha = getCommitSha(repo, args.version, args.ghbearer)
                     if (commitsha) {
@@ -89,6 +87,9 @@ def call(Map args) {
     else {
         println("DEVLAKE DEBUG: ERROR: unable to get repo property from Artifactory. Missing 'repo' property in artifact or other error.")
     }
+
+    // fixes the serialization issues in Jenkins:
+    // https://www.jenkins.io/doc/book/pipeline/pipeline-best-practices/#avoiding-notserializableexception
     get = null
 }
 /**
@@ -101,14 +102,15 @@ def getCommitSha(repo, version, ghbearer) {
     if (debug) { println("DEVLAKE DEBUG: Encoded tag/version: ${encodedVersion}") }
 
     try {
-        def get = new URL("https://api.github.com/repos/plugsurfing/${repo}/git/ref/tags/${encodedVersion}").openConnection()
+        url = "https://api.github.com/repos/plugsurfing/${repo}/git/ref/tags/${encodedVersion}"
+        def get = new URL(url).openConnection()
         get.requestMethod = 'GET'
         get.setRequestProperty('Content-Type', 'application/json')
         get.setRequestProperty('Authorization', 'Bearer ' + ghbearer)
         get.setRequestProperty('X-GitHub-Api-Version', '2022-11-28')
         getRC = get.getResponseCode()
         getResponseMessage = get.getResponseMessage()
-        if (debug) { println("DEVLAKE DEBUG: Requesting SHA for repo: ${repo}, version: ${version}") }
+        if (debug) { println("DEVLAKE DEBUG: Requesting SHA for repo: ${repo}, version: ${version}. GitHub url: ${url}") }
 
         if (getRC == (200)) {
             response = get.inputStream.getText()
@@ -124,6 +126,8 @@ def getCommitSha(repo, version, ghbearer) {
     catch (Exception e) {
         println("DEVLAKE DEBUG: ERROR: GET exception: ${e}")
     }
+    // fixes the serialization issues in Jenkins:
+    // https://www.jenkins.io/doc/book/pipeline/pipeline-best-practices/#avoiding-notserializableexception
     get = null
 }
 
@@ -132,7 +136,7 @@ def getCommitSha(repo, version, ghbearer) {
 */
 def getRepoName(appname, version, artifactorybearer) {
     try {
-        url = "https://plugsurfing.jfrog.io/artifactory/api/storage/ps-generic/${appname}/${version}?properties=repo"
+        url = "https://plugsurfing.jfrog.io/artifactory/api/storage/ps-generic/terraform/${appname}/${version}?properties=repo"
         def get = new URL(url).openConnection()
         get.requestMethod = 'GET'
         get.setRequestProperty('X-JFrog-Art-Api', artifactorybearer)
@@ -154,6 +158,8 @@ def getRepoName(appname, version, artifactorybearer) {
     catch (Exception e) {
         println("DEVLAKE DEBUG: ERROR: GET exception: ${e}")
     }
+    // fixes the serialization issues in Jenkins:
+    // https://www.jenkins.io/doc/book/pipeline/pipeline-best-practices/#avoiding-notserializableexception
     get = null
 }
 
@@ -167,6 +173,7 @@ def getWebhook(teamName, dlbearer) {
         println("DEVLAKE DEBUG: Requesting webhook path from DevLake. Webhook name requested: ${webhook}")
     }
 
+    // get all webhooks configured in DevLake
     try {
         def get = new URL('https://devlake-configui.central.plugsurfing-infra.com/api/rest/plugins/webhook/connections').openConnection()
         get.requestMethod = 'GET'
@@ -174,7 +181,7 @@ def getWebhook(teamName, dlbearer) {
         get.setRequestProperty('Authorization', 'Bearer ' + dlbearer)
         getRC = get.getResponseCode()
 
-
+        // Find out which webhook matches the team in github
         if (getRC == (200)) {
             response = get.inputStream.getText()
             webhookJson = new JsonSlurperClassic().parseText(response)
@@ -202,6 +209,8 @@ def getWebhook(teamName, dlbearer) {
     catch (Exception e) {
         println("DEVLAKE DEBUG: ERROR: GET exception: ${e}")
     }
+    // fixes the serialization issues in Jenkins:
+    // https://www.jenkins.io/doc/book/pipeline/pipeline-best-practices/#avoiding-notserializableexception
     get = null
 }
 /**
@@ -243,9 +252,43 @@ def notifyDeployment(payload, webhook, dlbearer) {
             <hidden>' -d 
             '${payload}'
         """
-    println("DEVLAKE: Notifying DevLake.")
+    println("DEVLAKE: Notifying DevLake ( *** DRYRUN *** )")
 
     if (debug) {
-        println("DEVLAKE DEBUG: Curl command: ${devlakePublish}")
+        println("DEVLAKE DEBUG: Curl command ( *** DRYRUN *** ): ${devlakePublish}")
     }
+}
+/**
+* Obtain the correct webhook from the DevLake API based on the GitHub team name.
+* It expects the DevLake webhook to be named EXACTLY `<github-team-slug>-webhook`.
+*/
+def notifyDeploymentx(payload, webhook, dlbearer) {
+    if (debug) {
+        println("DEVLAKE DEBUG: Running notification function with following webhook: ${webhook}")
+    }
+    try {
+        notifyurl = "https://devlake-configui.central.plugsurfing-infra.com/api${webhook}"
+        post = new URL(notifyurl).openConnection()
+        post.setDoOutput(true)
+        post.requestMethod = 'POST'
+        post.setRequestProperty('Content-Type', 'application/json')
+        post.setRequestProperty('Authorization', 'Bearer ' + dlbearer)
+        post.getOutputStream().write(payload.getBytes("UTF-8"));
+        postRC = post.getResponseCode()
+
+        // Find out which webhook matches the team in github
+        if (postRC == (200)) {
+            println("DEVLAKE DEBUG: Notifying devlake. URL: ${notifyurl}, Payload: ${payload}")
+            println("Successfully notified DevLake.")
+        }
+        else {
+            println("DEVLAKE DEBUG: ERROR: getWebhook function returned response code: ${getRC}")
+        }
+    }
+    catch (Exception e) {
+        println("DEVLAKE DEBUG: ERROR: exception: ${e}")
+    }
+    // fixes the serialization issues in Jenkins:
+    // https://www.jenkins.io/doc/book/pipeline/pipeline-best-practices/#avoiding-notserializableexception
+    post = null
 }
