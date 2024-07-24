@@ -22,7 +22,7 @@ def call(Map args) {
     // Collect the Repo corresponding to the app/service
     repo = getRepoName(args.appname, args.version, args.afbearer)
 
-    if (debug) { println("DEVLAKE DEBUG: Running main function with following parameters: currentBuild: ${currentBuild}, repo: ${repo}, version/tag: ${args.version}") }
+    if (debug) { println("DEVLAKE DEBUG: Running the main function with the following parameters: currentBuild: ${currentBuild}, repo: ${repo}, version/tag: ${args.version}") }
 
     // I am really sorry for this nested if. I shall find a cleaner alternative asap.
     if (repo) {
@@ -43,13 +43,13 @@ def call(Map args) {
                 // skip "plugsurfing" since it is a common team with no corresponding DevLake project.
                 teams -= 'plugsurfing'
 
-                if (debug) { println("DEVLAKE DEBUG: Teams associated to repo ${repo} excluding Plugsurfing: ${teams}")}
+                if (debug) { println("DEVLAKE DEBUG: Teams associated to repo ${repo} excluding 'plugsurfing': ${teams}")}
 
                 // Run the notifier block for every team the repo is associated to in GitHub
 
                 // Run only if at least one team is associated to the repo
                 if (teams.size() > 0) {
-                    if (debug) { println('DEVLAKE DEBUG: Running teams loop') }
+                    if (debug) { println('DEVLAKE DEBUG: Running main script for each team') }
                     // Collect the release SHA from GitHub
                     commitsha = getCommitSha(repo, args.version, args.ghbearer)
                     if (commitsha) {
@@ -64,28 +64,28 @@ def call(Map args) {
                                 notifyDeployment(payload, webhook, args.dlbearer)
                             }
                             else {
-                                println("DEVLAKE DEBUG: Team ${team} has no corresponding webhook in DevLake, or unable to reach DevLake.")
+                                println("DEVLAKE DEBUG: Not executing DevLake deployment notification. Reason: Team ${team} has no corresponding webhook in DevLake, or unable to reach DevLake.")
                             }
                         }
                     }
                     else {
-                        println('DEVLAKE DEBUG: No valid commit sha found. Exiting')
+                        println('DEVLAKE DEBUG: Not executing DevLake deployment notification. Reason: no valid commit sha found. ')
                     }
                 }
                 else {
-                    println('DEVLAKE DEBUG: Not executing notification script. Probably no teams associated to repo.')
+                    println('DEVLAKE DEBUG: Not executing DevLake deployment notification. Reason: probably no team is associated to the repo in GitHub.')
                 }
             }
             else {
-                println("DEVLAKE DEBUG: ERROR: main function returned code: ${getRC}, message: ${getMessage}. Ensure you are querying the right repo name in GitHub.")
+                println("DEVLAKE DEBUG: Not executing DevLake deployment notification. Reason: main function returned code: ${getRC}, message: ${getMessage}. Ensure you are able to reach the GitHub API and/or you are querying the right repo name.")
             }
         }
         catch (Exception e) {
-            println("DEVLAKE DEBUG: ERROR: GET exception for main function: ${e}")
+            println("DEVLAKE DEBUG: Not executing DevLake deployment notification. Reason: GET exception for main function: ${e}")
         }
     }
     else {
-        println("DEVLAKE DEBUG: ERROR: unable to get repo property from Artifactory. Missing 'repo' property in artifact or other error.")
+        println("DEVLAKE DEBUG: Not executing DevLake deployment notification. Reason: unable to get repo property from Artifactory. Missing 'repo' property in artifact or other error.")
     }
 
     // fixes the serialization issues in Jenkins:
