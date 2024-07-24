@@ -20,7 +20,8 @@ afbearer - Artifactory bearer with RO access to Artifacts
 
 **Optional:**
 
-debug: true|false (default false)
+debug: true|false (default false) - verbose mode, prints many messages in the pipeline execution log
+dryrun: true|false (default false) - dry run/simulate: only prints the JSON payload that would be sent to DevLake
 
 
 **Example usage wrapped around `withCredentials`:**
