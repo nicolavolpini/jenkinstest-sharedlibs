@@ -1,32 +1,42 @@
 The library expects the following parameters:
 
 
-**Passed by Jenkins:**
+<b>
+Passed by Jenkins:
+</b>
 
 currentBuild.startTimeInMillis
 currentBuild.duration
 currentBuild.currentResult
 
-**Passed as build parameters:**
+<b>
+Passed as build parameters:
+</b>
 
 params.version
 params.appName
 
-**Passed as credentials:**
+<b>
+Passed as credentials:
+</b>
 
 ghbearer - GitHub bearer with RO access
 dlbearer - DevLake bearer with RW access to webhooks
 afbearer - Artifactory bearer with RO access to Artifacts
 
-**Optional:**
+<b>
+Optional:
+</b>
 
 debug: true|false (default false) - verbose mode, prints many messages in the pipeline execution log
-dryrun: true|false (default false) - dry run/simulate: only prints the JSON payload that would be sent to DevLake
+dryrun: true|false (default false)
 
 
-**Example usage wrapped around `withCredentials`:**
+<b>
+Example usage wrapped around `withCredentials`:
+</b>
 
-```
+<code>
 pipeline {
     agent any
 
@@ -47,5 +57,4 @@ pipeline {
         }
     }
 }
-
-```
+</code>
