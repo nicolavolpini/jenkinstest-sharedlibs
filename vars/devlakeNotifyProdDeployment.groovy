@@ -19,6 +19,7 @@ import groovy.json.JsonOutput
 */
 def call(Map args) {
     debug = args.debug ?: false
+    dryrun = args.dryrun ?: false
 
     // Collect the Repo corresponding to the app/service
     repo = getRepoName(args.appname, args.version, args.afbearer)
@@ -266,8 +267,10 @@ def notifyDeployment(payload, webhook, dlbearer) {
     if (debug) {
         println("DEVLAKE DEBUG: Running notification function with following webhook: ${webhook}")
     }
+    notifyurl = "https://devlake-configui.central.plugsurfing-infra.com/api${webhook}"
+
+    if (!dryrun) {
     try {
-        notifyurl = "https://devlake-configui.central.plugsurfing-infra.com/api${webhook}"
         post = new URL(notifyurl).openConnection()
         post.setDoOutput(true)
         post.requestMethod = 'POST'
@@ -278,7 +281,9 @@ def notifyDeployment(payload, webhook, dlbearer) {
 
         // Find out which webhook matches the team in github
         if (postRC == (200)) {
-            println("DEVLAKE DEBUG: Notifying devlake. URL: ${notifyurl}, Payload: ${payload}")
+            if (debug) {
+                println("DEVLAKE DEBUG: Notifying devlake. URL: ${notifyurl}, Payload: ${payload}")
+            }
             println("Successfully notified DevLake.")
         }
         else {
@@ -291,4 +296,8 @@ def notifyDeployment(payload, webhook, dlbearer) {
     // fixes the serialization issues in Jenkins:
     // https://www.jenkins.io/doc/book/pipeline/pipeline-best-practices/#avoiding-notserializableexception
     post = null
+    }
+    else {
+        println("DEVLAKE DEBUG: (**DRY RUN**) Notifying devlake. URL: ${notifyurl}, Payload: ${payload} (**DRY RUN**)")
+    }
 }
